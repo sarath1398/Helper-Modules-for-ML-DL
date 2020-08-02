@@ -65,6 +65,8 @@ def fetch_image_urls(query: str, max_links_to_fetch: int, wd: webdriver, sleep_b
                 if actual_image.get_attribute('src') and 'http' in actual_image.get_attribute('src'):
                     image_urls.add(actual_image.get_attribute('src'))
             #print(f" {len(image_urls)} Images added to set ")
+            
+            #Remove the images if the fetched images > images required
             if len(image_urls)>max_links_to_fetch:
                 for rem in range(len(inage_urls)-max_links_to_fetch):
                     image_urls.discard(image_urls[len(image_urls)-rem])
@@ -111,7 +113,7 @@ if __name__=='__main__':
 
     if not os.path.exists('./ScrapedImages'):
         os.mkdir('./ScrapedImages')
-    os.chdir('./ScrapedImages')
+    
     #number_of_images=int(input("Enter the number of Images Required: "))
     for query in search_queries:
-        search_and_download(query, driver_path=path,target_path=f'./{query}', number_images=number_of_images)
+        search_and_download(query, driver_path=path,target_path=f'./ScrapedImages/{query}', number_images=number_of_images)
