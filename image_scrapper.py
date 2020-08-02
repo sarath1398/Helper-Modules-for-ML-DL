@@ -6,11 +6,13 @@ import hashlib
 import requests
 import os
 
+#Customize your browser path and driver path here
 options = webdriver.ChromeOptions()
-options.binary_location = r'C:\Program Files (x86)\BraveSoftware\Brave-Browser\Application\brave.exe' #For Example only. Use your Browser path.
-path = r'C:\Program Files (x86)\BraveSoftware\Brave-Browser\Application\chromedriver.exe' #For Example only. Use your Driver path.
+options.binary_location = r'C:\Program Files (x86)\BraveSoftware\Brave-Browser\Application\brave.exe' 
+path = r'C:\Program Files (x86)\BraveSoftware\Brave-Browser\Application\chromedriver.exe'
 #driver = webdriver.Chrome(executable_path=path,options=options)
-#options.add_argument('--headless') #Remove the comment if you don't want to open the browser that's running in test mode.
+#driver.get('https://www.google.com')
+#options.add_argument('--headless')
 
 def fetch_image_urls(query: str, max_links_to_fetch: int, wd: webdriver, sleep_between_interactions: int = 1):
 
@@ -18,20 +20,21 @@ def fetch_image_urls(query: str, max_links_to_fetch: int, wd: webdriver, sleep_b
         wd.execute_script("window.scrollTo(0, document.body.scrollHeight);")
         time.sleep(sleep_between_interactions)
 
-    #....................................Build the Search Query.............................................
+    #Build the query
     search_url = "https://www.google.com/search?safe=off&site=&tbm=isch&source=hp&q={q}&oq={q}&gs_l=img".format(q=query)
     wd.get(search_url)
 
     thumbnail_results = wd.find_elements_by_css_selector("img.Q4LuWd")
     #wd.execute_script("console.log(document.getElementsByTagName('img').length)")
 
-    #Click the more images button till the page has the required number of images
+    #Click the show more button till the number of images >= max_links_to_fetch
+    
     while len(thumbnail_results)<max_links_to_fetch:
         load_more_button = wd.find_element_by_css_selector(".mye4qd")
         thumbnail_results = wd.find_elements_by_css_selector("img.Q4LuWd")
         if load_more_button :
             wd.execute_script("document.querySelector('.mye4qd').click();")
-            time.sleep(sleep_between_interactions)
+            time.sleep(1)
             #driver.execute_script("console.log(document.getElementsByTagName('img').length)")
             #print(f"Length of thumbnail images are : {len(thumbnail_results)}")
         else:
@@ -42,7 +45,10 @@ def fetch_image_urls(query: str, max_links_to_fetch: int, wd: webdriver, sleep_b
     else:
         print(f"Webpage available for downloading {max_links_to_fetch}")
     
+    #Extracting Links Part
     image_urls = set()
+    image_count = 0
+    results_start = 0
 
     while image_count < max_links_to_fetch:
         scroll_to_end(wd)
@@ -51,7 +57,7 @@ def fetch_image_urls(query: str, max_links_to_fetch: int, wd: webdriver, sleep_b
         thumbnail_results = wd.find_elements_by_css_selector("img.Q4LuWd")
         number_results = len(thumbnail_results)
 
-        for img in thumbnail_results[0:min(max_links_to_fetch,number_results)]:
+        for img in thumbnail_results[results_start:max_links_to_fetch]:
             # try to click every thumbnail such that we can get the real image behind it
             try:
                 img.click()
@@ -65,14 +71,10 @@ def fetch_image_urls(query: str, max_links_to_fetch: int, wd: webdriver, sleep_b
                 if actual_image.get_attribute('src') and 'http' in actual_image.get_attribute('src'):
                     image_urls.add(actual_image.get_attribute('src'))
             #print(f" {len(image_urls)} Images added to set ")
-            
-            #Remove the images if the fetched images > images required
             if len(image_urls)>max_links_to_fetch:
-                for rem in range(len(image_urls)-max_links_to_fetch):
-                    image_urls.discard(image_urls[len(image_urls)-rem])
                 return image_urls
 
-#Download the image from the URLs
+#Download of Image URLs into actual images part
 def persist_image(folder_path: str, url: str):
 
     try:
@@ -84,16 +86,14 @@ def persist_image(folder_path: str, url: str):
     try:
         image_file = io.BytesIO(image_content)
         image = Image.open(image_file).convert('RGB')
-        file_path = os.path.join(folder_path, hashlib.sha1(
-            image_content).hexdigest()[:10] + '.jpg')
+        file_path = os.path.join(folder_path, hashlib.sha1(image_content).hexdigest()[:10] + '.jpg')
         with open(file_path, 'wb') as f:
             image.save(f, "JPEG", quality=85)
         print(f"SUCCESS - saved {url} - as {file_path}")
     except Exception as e:
         print(f"ERROR - Could not save {url} - {e}")
 
-#Wrapper function for downloading the images
-def search_and_download(search_term: str, driver_path: str, target_path='./images', number_images=5):
+def search_and_download(search_term: str, driver_path: str, target_path='./ScrapedImages', number_images=50):
     target_folder = os.path.join(target_path, '_'.join(search_term.lower().split(' ')))
 
     if not os.path.exists(target_folder):
@@ -107,13 +107,12 @@ def search_and_download(search_term: str, driver_path: str, target_path='./image
 
 if __name__=='__main__':
     
-    search_queries = ['Person of Interest'] # Mention your queries as a list of queries
-    #number_of_images=100
-    number_of_images=int(input("Enter the number of images to be downloaded"))
+    search_queries = ['Facial Recognition Images'] #Provide Input in list of strings format
+    number_of_images=int(input("Enter the Number of Images to be downloaded: "))           
 
     if not os.path.exists('./ScrapedImages'):
         os.mkdir('./ScrapedImages')
-    
-    #number_of_images=int(input("Enter the number of Images Required: "))
+    #os.chdir('./ScrapedImages')
+
     for query in search_queries:
-        search_and_download(query, driver_path=path,target_path=f'./ScrapedImages/{query}', number_images=number_of_images)
+        search_and_download(search_term=query, driver_path=path, number_images=number_of_images)
