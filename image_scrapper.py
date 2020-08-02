@@ -68,7 +68,7 @@ def fetch_image_urls(query: str, max_links_to_fetch: int, wd: webdriver, sleep_b
             
             #Remove the images if the fetched images > images required
             if len(image_urls)>max_links_to_fetch:
-                for rem in range(len(inage_urls)-max_links_to_fetch):
+                for rem in range(len(image_urls)-max_links_to_fetch):
                     image_urls.discard(image_urls[len(image_urls)-rem])
                 return image_urls
 
