@@ -94,7 +94,7 @@ def persist_image(folder_path: str, url: str):
         print(f"ERROR - Could not save {url} - {e}")
 
 def search_and_download(search_term: str, driver_path: str, target_path='./ScrapedImages', number_images=50):
-    target_folder = os.path.join(target_path, '_'.join(search_term.lower().split(' ')))
+    target_folder = os.path.join(target_path, '_'.join(search_term.split(' ')))
 
     if not os.path.exists(target_folder):
         os.makedirs(target_folder)
